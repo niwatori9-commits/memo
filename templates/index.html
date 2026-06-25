@@ -33,7 +33,7 @@
             line-height: 1.2;
         }
 
-        form {
+        .add-form {
             display: flex;
             gap: 8px;
             margin-bottom: 24px;
@@ -67,6 +67,11 @@
             background: #1d4ed8;
         }
 
+        .task-list {
+            display: grid;
+            gap: 10px;
+        }
+
         ul {
             list-style: none;
             margin: 0;
@@ -85,15 +90,79 @@
             word-break: break-word;
         }
 
-        a {
-            flex-shrink: 0;
-            color: #dc2626;
-            font-size: 14px;
-            text-decoration: none;
+        li.overdue {
+            border-color: #fca5a5;
+            background: #fff1f2;
         }
 
-        a:hover {
-            text-decoration: underline;
+        li.due-today {
+            border-color: #facc15;
+            background: #fffbeb;
+        }
+
+        li.done {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+
+        li.done .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-main {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .task-text {
+            font-weight: 600;
+        }
+
+        .task-meta {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .task-meta.danger {
+            color: #dc2626;
+            font-weight: 700;
+        }
+
+        .task-meta.warning {
+            color: #92400e;
+            font-weight: 700;
+        }
+
+        .task-actions {
+            display: flex;
+            flex-shrink: 0;
+            gap: 8px;
+        }
+
+        .inline-form {
+            margin: 0;
+        }
+
+        .secondary-button,
+        .danger-button {
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 14px;
+            padding: 8px 10px;
+        }
+
+        .secondary-button:hover {
+            background: #e5e7eb;
+        }
+
+        .danger-button {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .danger-button:hover {
+            background: #fecaca;
         }
 
         .empty-message {
@@ -106,7 +175,7 @@
                 padding: 20px;
             }
 
-            form {
+            .add-form {
                 flex-direction: column;
             }
 
@@ -117,30 +186,62 @@
             input[type="date"] {
                 max-width: none;
             }
+
+            li {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .task-actions {
+                width: 100%;
+            }
+
+            .task-actions form,
+            .task-actions button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <main class="container">
-        <h1>Task Memo App</h1>
+        <h1>タスク管理</h1>
 
-        <form method="post">
-            <input type="text" name="task" placeholder="Enter a task" required>
+        <form class="add-form" method="post">
+            <input type="text" name="task" placeholder="タスクを入力" required>
             <input type="date" name="due_date">
-            <button type="submit">Add</button>
+            <button type="submit">追加</button>
         </form>
 
         {% if tasks %}
-            <ul>
+            <ul class="task-list">
                 {% for task in tasks %}
-                    <li>
-                        <span>{{ task.text }}</span>
-                        <a href="{{ url_for('delete_task', task_id=loop.index0) }}">Delete</a>
+                    <li class="{% if task.is_overdue %}overdue{% elif task.is_due_today %}due-today{% endif %} {% if task.is_done %}done{% endif %}">
+                        <div class="task-main">
+                            <span class="task-text">{{ task.text }}</span>
+                            {% if task.is_overdue %}
+                                <span class="task-meta danger">期限切れ: {{ task.due_label }}</span>
+                            {% elif task.is_due_today %}
+                                <span class="task-meta warning">今日まで: {{ task.due_label }}</span>
+                            {% else %}
+                                <span class="task-meta">{{ task.due_label }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="task-actions">
+                            <form class="inline-form" method="post" action="{{ url_for('toggle_task', task_id=task.id) }}">
+                                <button class="secondary-button" type="submit">
+                                    {% if task.is_done %}戻す{% else %}完了{% endif %}
+                                </button>
+                            </form>
+                            <form class="inline-form" method="post" action="{{ url_for('delete_task', task_id=task.id) }}" onsubmit="return confirm('このタスクを削除しますか？');">
+                                <button class="danger-button" type="submit">削除</button>
+                            </form>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p class="empty-message">No tasks yet.</p>
+            <p class="empty-message">まだタスクはありません。今日やることを追加しましょう。</p>
         {% endif %}
     </main>
 </body>
